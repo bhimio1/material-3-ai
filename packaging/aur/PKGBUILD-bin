@@ -1,0 +1,30 @@
+# Maintainer: bhimio1
+# Template: the release workflow fills in @PKGVER@ and @SHA256@ and publishes
+# this to the AUR as material-3-ai-bin.
+pkgname=material-3-ai-bin
+pkgver=@PKGVER@
+pkgrel=1
+pkgdesc="Material 3 desktop app for Claude Code"
+arch=('x86_64')
+url="https://github.com/bhimio1/material-3-ai"
+license=('MIT')
+depends=('libxkbcommon' 'wayland' 'libglvnd' 'xdg-utils')
+# Material 3 AI drives your own `claude` command. Install it from the AUR
+# (claude-code) or with Anthropic's installer, then sign in from Settings.
+optdepends=(
+  'claude-code: the Claude Code CLI this app runs (or use the official installer)'
+  'xdg-desktop-portal: native folder and image pickers'
+  'libnotify: desktop notifications (notify-send)'
+)
+provides=('material-3-ai')
+conflicts=('material-3-ai' 'material-3-ai-git')
+source=("$pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/m3-ai-x86_64-linux.tar.gz")
+sha256sums=('@SHA256@')
+
+package() {
+  cd "m3-ai-x86_64-linux"
+  install -Dm755 m3-ai "$pkgdir/usr/bin/m3-ai"
+  install -Dm644 material_3_ai.desktop "$pkgdir/usr/share/applications/material_3_ai.desktop"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 LICENSE-Inter.txt "$pkgdir/usr/share/licenses/$pkgname/LICENSE-Inter.txt"
+}

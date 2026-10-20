@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Material 3 AI
+GenericName=AI Coding Assistant
+Comment=A desktop app for Claude Code: chat with Claude about the code in your folders
+Exec=m3-ai %f
+Icon=applications-development
+Terminal=false
+Categories=Development;Utility;
+Keywords=ai;claude;assistant;chat;code;
+StartupWMClass=material_3_ai
+MimeType=inode/directory;
