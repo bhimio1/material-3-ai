@@ -1,16 +1,17 @@
 //! A chat tab: the message list, permission prompts, the task list, the
 //! composer and the status bar.
 
-use super::markdown;
 use super::tools;
-use super::widgets::{self, ButtonKind};
+use material_3_ui::keys::take_key;
+use material_3_ui::markdown;
+use material_3_ui::widgets::{self, ButtonKind};
 use super::{Action, Actions};
 use crate::chat::Chat;
 use crate::claude::conversation::{Body, Item};
 use crate::claude::protocol::{self, Decision, PermissionRequest};
-use crate::theme::M3Palette;
+use material_3_ui::theme::M3Palette;
 use egui::{CornerRadius, Frame, Margin, RichText, Ui};
-use egui_material_icons::icons::*;
+use material_3_ui::icons::icons::*;
 use std::collections::HashSet;
 
 /// Widest the conversation column gets.
@@ -33,7 +34,7 @@ pub fn show(ui: &mut Ui, chat: &mut Chat, env: &Env<'_>, actions: &mut Actions) 
             if let Some(err) = chat.exited.clone().filter(|e| !e.is_empty()) {
                 ui.add_space(6.0);
                 centered(ui, |ui| {
-                    super::common::banner(ui, ICON_ERROR, &format!("Claude Code exited: {err}"), true, |ui| {
+                    material_3_ui::common::banner(ui, ICON_ERROR, &format!("Claude Code exited: {err}"), true, |ui| {
                         if widgets::button(ui, ButtonKind::Text, None, "Dismiss").clicked() {
                             chat.exited = None;
                         }
@@ -42,7 +43,7 @@ pub fn show(ui: &mut Ui, chat: &mut Chat, env: &Env<'_>, actions: &mut Actions) 
             }
             if let Some(b) = chat.conv.banner.clone() {
                 ui.add_space(6.0);
-                centered(ui, |ui| super::common::banner(ui, ICON_SYNC, &b, false, |_| {}));
+                centered(ui, |ui| material_3_ui::common::banner(ui, ICON_SYNC, &b, false, |_| {}));
             }
             if !chat.conv.permissions.is_empty() {
                 ui.add_space(6.0);
@@ -150,7 +151,7 @@ fn show_item(
         Body::Text(text) => {
             ui.add_space(2.0);
             let mut opened = None;
-            markdown::show(ui, text, size, &mut |u| opened = Some(u));
+            markdown::show_with(ui, text, size, &mut |u| opened = Some(u), Some(super::syntax::highlighter()));
             if let Some(u) = opened {
                 actions.push(Action::OpenUrl(u));
             }
@@ -240,7 +241,7 @@ fn empty_state(ui: &mut Ui, chat: &Chat, p: &M3Palette) {
         ui.add_space(8.0);
         ui.label(RichText::new("What should we work on?").size(26.0).color(p.on_surface));
         ui.label(
-            RichText::new(format!("Claude Code works in {}", crate::sys::paths::tilde(&chat.cwd)))
+            RichText::new(format!("Claude Code works in {}", material_3_ui::sys::paths::tilde(&chat.cwd)))
                 .size(14.0)
                 .color(p.on_surface_variant),
         );
@@ -329,7 +330,8 @@ fn permissions(ui: &mut Ui, chat: &mut Chat, p: &M3Palette) {
                         let always = widgets::button(ui, ButtonKind::Tonal, Some(ICON_DONE_ALL), "Always").on_hover_text(always_label(req));
                         let deny = widgets::button(ui, ButtonKind::Text, Some(ICON_BLOCK), "Deny").on_hover_text("N");
                         let (ky, ka, kn) = if keys {
-                            ui.input(|i| (i.key_pressed(egui::Key::Y), i.key_pressed(egui::Key::A), i.key_pressed(egui::Key::N)))
+                            let key = |k| take_key(ui.ctx(), egui::Modifiers::NONE, k);
+                            (key(egui::Key::Y), key(egui::Key::A), key(egui::Key::N))
                         } else {
                             (false, false, false)
                         };

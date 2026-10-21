@@ -1,8 +1,4 @@
-//! Talking to the system: commands, background tasks, paths, terminals and
-//! portals.
+//! Talking to the desktop: file and folder pickers through portals. The
+//! rest (commands, tasks, paths, terminals) comes from material-3-ui.
 
-pub mod cmd;
-pub mod paths;
 pub mod portal;
-pub mod task;
-pub mod term;

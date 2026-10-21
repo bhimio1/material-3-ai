@@ -25,14 +25,14 @@ pub fn parse_auth_status(json: &str) -> (bool, Option<String>, Option<String>) {
 pub fn load(program: &Path) -> Info {
     let program = program.to_string_lossy();
     let mut info = Info::default();
-    match crate::sys::cmd::run(&program, &["--version"]) {
+    match material_3_ui::sys::cmd::run(&program, &["--version"]) {
         Ok(v) => info.version = v.split_whitespace().next().map(str::to_string),
         Err(e) => {
             info.error = Some(e);
             return info;
         }
     }
-    match crate::sys::cmd::run(&program, &["auth", "status", "--json"]) {
+    match material_3_ui::sys::cmd::run(&program, &["auth", "status", "--json"]) {
         Ok(out) | Err(out) => {
             let (logged_in, method, projects) = parse_auth_status(&out);
             info.logged_in = logged_in;

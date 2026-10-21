@@ -47,13 +47,13 @@ Material 3 AI runs the `claude` command you already have installed and signed in
 - **Claude Code:** where `claude` is, its version, and whether you're signed in. **Sign in** opens a terminal running Claude Code's own login.
 - **New chats:** default model and permission mode, extra folders (`--add-dir`), extra instructions for the system prompt, and an MCP servers file (`--mcp-config`).
 - **Appearance:** color source, light/dark, seed color, chat text size, filled icons and interface scale.
-- **Notifications:** a desktop notification when a reply finishes, or when Claude needs permission while the window isn't focused.
+- **Notifications:** a desktop notification when a reply finishes, or when Claude needs permission while the window isn't focused. Clicking it brings the window back.
 
 ## Requirements
 
 - [Claude Code](https://code.claude.com/docs/en/setup), installed and signed in. Install it from the AUR (`claude-code`) or with the official installer. Material 3 AI looks for `claude` on your `PATH`, in `~/.local/bin`, `~/.claude/local` and `~/.npm-global/bin`, or you can set the path in Settings.
 - `xdg-desktop-portal` for the folder and image pickers. Without it, you can type a folder path instead.
-- `notify-send` (libnotify) for notifications. This is optional.
+- A notification server (your desktop shell's, mako, dunst, …) for notifications. This is optional.
 
 ## Your account and credentials
 
@@ -108,7 +108,7 @@ In Settings, **Auto** uses the end-4 shell's generated colors (`~/.local/state/q
 
 ## Files
 
-- Preferences: `~/.config/m3-ai/config.toml`.
+- Preferences: `~/.config/m3-ai/config.toml` (appearance under `[appearance]`, shared with the other Material 3 apps; older top-level `theme_source`, `color_scheme`, … settings are carried over).
 - Chat list: `~/.local/share/m3-ai/sessions.json`. This holds titles, folders and costs only.
 - Transcripts stay where Claude Code keeps them (`~/.claude/projects`).
 
@@ -158,14 +158,15 @@ src/
     conversation.rs  turning events into chat items
     index.rs      the chat list and Claude Code's transcripts
     info.rs       version and sign-in status
-  sys/          commands, background tasks, portal pickers, terminal
-  theme/        M3 palette (seed / matugen / end-4) → egui style (shared with the other apps)
-  ui/           sidebar, chat, composer, tool cards, markdown, settings, widgets
+  sys/          portal pickers
+  ui/           sidebar, chat, composer, tool cards, code highlighting, settings
 scripts/dev/fake-claude   protocol stub for development and tests
 ```
+
+The palette, egui style, fonts, widgets, page scaffolding, toasts, Markdown rendering, notifications and system helpers come from the shared [material-3-ui](https://github.com/bhimio1/material-3-ui) crate; syntect's grammars plug into its Markdown renderer for code.
 
 ## License
 
 MIT, see [LICENSE](LICENSE).
 
-Fonts: Inter (SIL OFL 1.1, see `assets/fonts/LICENSE-Inter.txt`). Icons: Material Symbols, via `egui_material_icons`.
+Fonts: Inter (SIL OFL 1.1, see `assets/fonts/LICENSE-Inter.txt`). Icons: Material Symbols, via `egui_material_icons` (both bundled through material-3-ui).

@@ -2,24 +2,14 @@
 //! anything that needs the whole app.
 
 pub mod chat;
-pub mod common;
 pub mod composer;
-pub mod markdown;
 pub mod settings;
 pub mod sidebar;
-pub mod toasts;
+pub mod syntax;
 pub mod tools;
-pub mod widgets;
 
+pub use material_3_ui::toasts::ToastKind;
 use std::path::PathBuf;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[allow(dead_code)] // Success is styled by toasts.rs; kept for parity with the other apps.
-pub enum ToastKind {
-    Info,
-    Success,
-    Error,
-}
 
 #[derive(Clone, Debug)]
 pub enum Action {

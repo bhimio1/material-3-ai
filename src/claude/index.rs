@@ -27,7 +27,7 @@ pub struct Index {
 
 pub fn path() -> PathBuf {
     dirs::data_dir()
-        .unwrap_or_else(|| crate::sys::paths::home().join(".local/share"))
+        .unwrap_or_else(|| material_3_ui::sys::paths::home().join(".local/share"))
         .join("m3-ai/sessions.json")
 }
 
@@ -84,7 +84,7 @@ pub fn projects_dir(reported: Option<&str>) -> PathBuf {
     }
     std::env::var_os("CLAUDE_CONFIG_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|| crate::sys::paths::home().join(".claude"))
+        .unwrap_or_else(|| material_3_ui::sys::paths::home().join(".claude"))
         .join("projects")
 }
 

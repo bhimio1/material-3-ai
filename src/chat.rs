@@ -6,7 +6,7 @@ use crate::claude::index::{self, SessionMeta};
 use crate::claude::process::{Event, Launch, Process};
 use crate::claude::protocol::{Decision, ImageBlock, Incoming, PermissionRequest, SpawnOptions};
 use crate::config::Config;
-use crate::sys::task::Task;
+use material_3_ui::sys::task::Task;
 use serde_json::Value;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};

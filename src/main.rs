@@ -7,7 +7,6 @@ mod claude;
 mod config;
 mod images;
 mod sys;
-mod theme;
 mod ui;
 
 use std::path::PathBuf;
