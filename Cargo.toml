@@ -12,7 +12,7 @@ path = "src/main.rs"
 [dependencies]
 eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow", "wayland", "x11", "persistence"] }
 egui = "0.37"
-material-3-ui = { git = "https://github.com/bhimio1/material-3-ui", rev = "5555579277ac2da1e0f1c15c2f2342d9bfd002b9", features = ["markdown", "notify"] }
+material-3-ui = { git = "https://github.com/bhimio1/material-3-ui", rev = "81c14000c29fb3cfefb0b77344b110a518bfed45", features = ["markdown", "notify"] }
 flume = "0.11"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
