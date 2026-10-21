@@ -4,15 +4,17 @@ use crate::chat::{Chat, ChatEvent};
 use crate::claude::index::{self, Index, SessionMeta};
 use crate::claude::info::{self, Info};
 use crate::claude::process;
-use crate::config::{ColorScheme, Config, ThemeSource};
-use crate::sys::task::Task;
-use crate::sys::{cmd, paths, term};
-use crate::theme::{sources, style, M3Palette};
-use crate::ui::toasts::{Toast, Toasts};
-use crate::ui::widgets::{self, ButtonKind};
+use crate::config::Config;
+use material_3_ui::sys::task::Task;
+use material_3_ui::sys::{cmd, paths, term};
+use material_3_ui::widgets::{self, ButtonKind};
 use crate::ui::{self, Action, Actions, ToastKind};
+use material_3_ui::keys::take_key;
+use material_3_ui::notify::{Notification, Notifier, Outcome};
+use material_3_ui::theme::{M3Palette, ThemeManager};
+use material_3_ui::toasts::{Toast, Toasts};
 use egui::{CornerRadius, Frame, Margin, RichText};
-use egui_material_icons::icons::*;
+use material_3_ui::icons::icons::*;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -24,9 +26,11 @@ pub struct Startup {
 
 pub struct App {
     pub ctx: egui::Context,
+    /// The theme's current palette.
     pub palette: M3Palette,
+    pub theme: ThemeManager,
     pub config: Config,
-    pub toasts: Toasts,
+    pub toasts: Toasts<Action>,
     pub actions: Actions,
     pub info: Task<Info>,
     pub program: Option<PathBuf>,
@@ -41,47 +45,19 @@ pub struct App {
     folder_pick: Task<Result<Option<PathBuf>, String>>,
     /// Typed-path fallback when no file chooser portal answers.
     typed_folder: Option<String>,
-    system_dark: Option<bool>,
     focused: bool,
     /// Development: a prompt sent to the first chat (`M3_AI_DEMO_PROMPT`).
     demo_prompt: Option<String>,
-    _theme_watcher: Option<notify::RecommendedWatcher>,
-    theme_events: flume::Receiver<PathBuf>,
 }
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>, startup: Startup) -> Self {
         let ctx = cc.egui_ctx.clone();
-        style::install_fonts(&ctx);
-
-        let (tx, theme_events) = flume::unbounded();
-        let theme_watcher = {
-            use notify::Watcher;
-            let ctx = ctx.clone();
-            notify::recommended_watcher(move |res: notify::Result<notify::Event>| {
-                if let Ok(ev) = res {
-                    if ev.kind.is_create() || ev.kind.is_modify() {
-                        for p in ev.paths {
-                            let _ = tx.send(p);
-                        }
-                        ctx.request_repaint_after(Duration::from_millis(150));
-                    }
-                }
-            })
-            .ok()
-            .map(|mut w| {
-                for file in [sources::end4_colors_path(), sources::file_manager_theme_path()].into_iter().flatten() {
-                    if let Some(dir) = file.parent() {
-                        let _ = w.watch(dir, notify::RecursiveMode::NonRecursive);
-                    }
-                }
-                w
-            })
-        };
-
         let config = Config::load();
+        let theme = ThemeManager::new(&ctx, &config.appearance);
         let mut app = Self {
-            palette: M3Palette::from_seed(crate::theme::palette::DEFAULT_SEED, true),
+            palette: theme.palette().clone(),
+            theme,
             program: process::resolve_program(&config.claude_path),
             config,
             toasts: Toasts::default(),
@@ -97,11 +73,8 @@ impl App {
             external: HashMap::new(),
             folder_pick: Task::default(),
             typed_folder: None,
-            system_dark: ctx.system_theme().map(|t| t == egui::Theme::Dark),
             focused: true,
             demo_prompt: std::env::var("M3_AI_DEMO_PROMPT").ok().filter(|p| !p.is_empty()),
-            _theme_watcher: theme_watcher,
-            theme_events,
             ctx,
         };
         app.apply_theme();
@@ -135,35 +108,17 @@ impl App {
 
     // ------------------------------------------------------------------ theme
 
-    fn wants_dark(&self) -> bool {
-        match self.config.color_scheme {
-            ColorScheme::Light => false,
-            ColorScheme::Dark => true,
-            ColorScheme::System => self.system_dark.unwrap_or(true),
-        }
-    }
-
-    pub fn theme_file(&self) -> Option<PathBuf> {
-        match self.config.theme_source {
-            ThemeSource::Auto => sources::auto_theme_path(),
-            ThemeSource::Seed => None,
-        }
-    }
-
+    /// Apply the appearance settings after they changed.
     pub fn apply_theme(&mut self) {
-        let dark = self.wants_dark();
-        let palette = match self.theme_file() {
-            Some(path) => M3Palette::from_theme_json(&path).unwrap_or_else(|_| M3Palette::from_seed(&self.config.seed_color, dark)),
-            None => M3Palette::from_seed(&self.config.seed_color, dark),
-        };
-        style::apply(&self.ctx, &palette);
-        widgets::set_palette(&self.ctx, palette.clone());
-        widgets::set_filled_icons(self.config.filled_icons);
-        let scale = self.config.ui_scale.clamp(0.6, 2.5);
-        if (self.ctx.zoom_factor() - scale).abs() > f32::EPSILON {
-            self.ctx.set_zoom_factor(scale);
+        self.theme.apply(&self.config.appearance);
+        self.theme_applied();
+    }
+
+    fn theme_applied(&mut self) {
+        if let Some(e) = self.theme.take_error() {
+            self.toast(e, ToastKind::Error);
         }
-        self.palette = palette;
+        self.palette = self.theme.palette().clone();
     }
 
     // ------------------------------------------------------------------ state
@@ -223,23 +178,33 @@ impl App {
         if self.focused || !self.config.notifications {
             return;
         }
-        let _ = cmd::spawn_detached("notify-send", &["-a", "Material 3 AI", "-i", "dialog-information", title, body]);
+        let n = Notification {
+            body: body.into(),
+            icon: "dialog-information".into(),
+            desktop_entry: Some("material_3_ai".into()),
+            ..Notification::new("Material 3 AI", title)
+        }
+        .action("default", "Show");
+        // Clicking the notification brings the window back.
+        let ctx = self.ctx.clone();
+        std::thread::spawn(move || {
+            let sent = Notifier::connect().and_then(|n2| n2.send(&n).map(|id| (n2, id)));
+            match sent {
+                Ok((notifier, id)) => {
+                    if let Outcome::Action(_) = notifier.wait(id, Duration::from_secs(30 * 60)) {
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
+                        ctx.request_repaint();
+                    }
+                }
+                Err(e) => log::warn!("couldn't show a notification: {e}"),
+            }
+        });
     }
 
     fn poll(&mut self) {
-        // Theme file changes.
-        let changed: Vec<PathBuf> = self.theme_events.try_iter().collect();
-        if let Some(theme) = self.theme_file() {
-            if changed.contains(&theme) {
-                self.apply_theme();
-            }
-        }
-        let system_dark = self.ctx.system_theme().map(|t| t == egui::Theme::Dark);
-        if system_dark != self.system_dark {
-            self.system_dark = system_dark;
-            if self.theme_file().is_none() {
-                self.apply_theme();
-            }
+        // Palette file changes and system light/dark switches.
+        if self.theme.poll(&self.config.appearance) {
+            self.theme_applied();
         }
         self.focused = self.ctx.input(|i| i.focused);
         self.info.poll();
@@ -522,12 +487,12 @@ impl App {
         let p = self.palette.clone();
         let mut close = false;
         let mut open = None;
-        ui::common::modal(&self.ctx, &p, "typed-folder", ICON_FOLDER_OPEN, "Open a project folder", |ui| {
+        material_3_ui::common::modal(&self.ctx, &p, "typed-folder", ICON_FOLDER_OPEN, "Open a project folder", |ui| {
             ui.label(RichText::new("No file chooser is available. Type the folder's path.").color(p.on_surface_variant));
             ui.add_space(8.0);
             let r = ui.add(egui::TextEdit::singleline(text).desired_width(380.0));
             let enter = r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
-            ui::common::dialog_buttons(ui, |ui| {
+            material_3_ui::common::dialog_buttons(ui, |ui| {
                 if widgets::button(ui, ButtonKind::Filled, None, "Open").clicked() || enter {
                     open = Some(paths::expand(text.trim()));
                 }
@@ -551,12 +516,8 @@ impl eframe::App for App {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        let (new_chat, settings) = ui.input(|i| {
-            (
-                i.modifiers.command && i.key_pressed(egui::Key::N),
-                i.modifiers.command && i.key_pressed(egui::Key::Comma),
-            )
-        });
+        let new_chat = take_key(ui.ctx(), egui::Modifiers::COMMAND, egui::Key::N);
+        let settings = take_key(ui.ctx(), egui::Modifiers::COMMAND, egui::Key::Comma);
         if new_chat {
             match self.current_project() {
                 Some(d) => self.actions.push(Action::NewChat(d)),
@@ -568,7 +529,8 @@ impl eframe::App for App {
         }
         self.layout(ui);
         self.typed_folder_dialog();
-        ui::toasts::show(&self.ctx.clone(), self);
+        let fired = self.toasts.show(&self.ctx.clone(), &self.palette, 20.0);
+        self.actions.extend(fired);
         self.process_actions();
     }
 

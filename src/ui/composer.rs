@@ -2,12 +2,12 @@
 //! completion, model and permission-mode pickers, send and stop.
 
 use super::chat::Env;
-use super::widgets::{self, ButtonKind};
+use material_3_ui::widgets::{self, ButtonKind};
 use super::{toast, Actions, ToastKind};
 use crate::chat::Chat;
 use crate::config::PERMISSION_MODES;
 use egui::{CornerRadius, Frame, Key, Margin, Modifiers, RichText, Ui};
-use egui_material_icons::icons::*;
+use material_3_ui::icons::icons::*;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 

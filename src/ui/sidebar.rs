@@ -1,12 +1,12 @@
 //! Navigation drawer: new chat, projects with their sessions, settings and
 //! the account status.
 
-use super::widgets::{self, nav_item, section_header, ButtonKind};
+use material_3_ui::widgets::{self, nav_item, section_header, ButtonKind};
 use super::Action;
 use crate::app::App;
 use crate::claude::index::SessionMeta;
 use egui::{pos2, vec2, CornerRadius, RichText, Sense, Ui};
-use egui_material_icons::icons::*;
+use material_3_ui::icons::icons::*;
 
 fn ago(ts: i64) -> String {
     let d = chrono::Utc::now().timestamp() - ts;
@@ -51,7 +51,7 @@ pub fn show(ui: &mut Ui, app: &mut App) {
     }
     ui.add_space(12.0);
     let w = ui.available_width() - 4.0;
-    super::common::search_field(ui, &mut app.sidebar_query, "Search chats", w);
+    material_3_ui::common::search_field(ui, &mut app.sidebar_query, "Search chats", w);
     ui.add_space(6.0);
 
     let query = app.sidebar_query.trim().to_lowercase();
@@ -76,7 +76,7 @@ pub fn show(ui: &mut Ui, app: &mut App) {
             let open = app.expanded_projects.contains(dir);
             let active = app.current_project().is_some_and(|c| c.to_string_lossy() == *dir);
             let resp = nav_item(ui, if open { ICON_FOLDER_OPEN } else { ICON_FOLDER }, &name, active && !open, None)
-                .on_hover_text(crate::sys::paths::tilde(std::path::Path::new(dir)));
+                .on_hover_text(material_3_ui::sys::paths::tilde(std::path::Path::new(dir)));
             if resp.clicked() {
                 if open {
                     app.expanded_projects.remove(dir);

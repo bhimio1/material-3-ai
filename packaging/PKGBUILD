@@ -13,7 +13,6 @@ makedepends=('cargo' 'git')
 optdepends=(
   'claude-code: the Claude Code CLI this app runs (or use the official installer)'
   'xdg-desktop-portal: native folder and image pickers'
-  'libnotify: desktop notifications (notify-send)'
 )
 provides=('material-3-ai')
 conflicts=('material-3-ai' 'material-3-ai-bin')

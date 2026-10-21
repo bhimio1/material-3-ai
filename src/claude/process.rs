@@ -194,7 +194,7 @@ impl Drop for Process {
 pub fn resolve_program(configured: &str) -> Option<PathBuf> {
     let configured = configured.trim();
     if !configured.is_empty() {
-        let p = crate::sys::paths::expand(configured);
+        let p = material_3_ui::sys::paths::expand(configured);
         return p.is_file().then_some(p);
     }
     if let Some(p) = std::env::var_os("M3_AI_CLAUDE").map(PathBuf::from) {
@@ -202,7 +202,7 @@ pub fn resolve_program(configured: &str) -> Option<PathBuf> {
             return Some(p);
         }
     }
-    let home = crate::sys::paths::home();
+    let home = material_3_ui::sys::paths::home();
     std::env::var_os("PATH")
         .map(|paths| std::env::split_paths(&paths).collect::<Vec<_>>())
         .unwrap_or_default()
@@ -245,7 +245,7 @@ mod tests {
 
     #[test]
     fn session_against_stub() {
-        if !std::path::Path::new("/usr/bin/python3").exists() && !crate::sys::cmd::exists("python3") {
+        if !std::path::Path::new("/usr/bin/python3").exists() && !material_3_ui::sys::cmd::exists("python3") {
             return;
         }
         let dir = tempfile::tempdir().unwrap();

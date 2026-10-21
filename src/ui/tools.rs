@@ -1,13 +1,13 @@
 //! Cards for Claude's tool calls: commands with output, file edits as
 //! diffs, searches, web requests, subagents and generic MCP calls.
 
-use super::widgets;
+use material_3_ui::widgets;
 use super::{Action, Actions};
 use crate::claude::conversation::ToolCall;
-use crate::theme::M3Palette;
+use material_3_ui::theme::M3Palette;
 use egui::text::{LayoutJob, TextFormat};
 use egui::{Color32, CornerRadius, FontId, Frame, Margin, RichText, Ui};
-use egui_material_icons::{icons::*, MaterialIcon};
+use material_3_ui::icons::{icons::*, MaterialIcon};
 use serde_json::Value;
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -244,7 +244,7 @@ fn code(ui: &mut Ui, p: &M3Palette, text: &str, lang: &str, max_lines: usize) {
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
             egui::ScrollArea::horizontal().id_salt(ui.next_auto_id()).show(ui, |ui| {
-                ui.add(egui::Label::new(super::markdown::highlight(&shown, lang, p, 12.0)).extend());
+                ui.add(egui::Label::new(super::syntax::highlight(&shown, lang, p, 12.0)).extend());
             });
             let more = text.lines().count().saturating_sub(max_lines);
             if more > 0 {
@@ -297,7 +297,7 @@ pub fn diff(ui: &mut Ui, p: &M3Palette, old: &str, new: &str, max_lines: usize) 
 
 fn blend_green(p: &M3Palette) -> Color32 {
     let base = Color32::from_rgb(0x2E, 0x7D, 0x32);
-    crate::theme::palette::blend(p.surface_container_highest, base, if p.is_dark() { 0.35 } else { 0.22 })
+    material_3_ui::theme::palette::blend(p.surface_container_highest, base, if p.is_dark() { 0.35 } else { 0.22 })
 }
 
 pub fn todo_list(ui: &mut Ui, p: &M3Palette, input: &Value) {
